@@ -2,16 +2,25 @@
 #include <SPI.h> // Not actualy used but needed to compile
 #include <Adafruit_NeoPixel.h>
 
-// Which pin on the Arduino is connected to the NeoPixels?
-// On a Trinket or Gemma we suggest changing this to 1
+
+// Digital pins
 #define PIXELPIN            6
+#define BOUTONSW_PIN        5
+#define MAX7219_CLK_PIN     7
+#define MAX7219_CS_PIN      9
+#define MAX7219_DIN_PIN     8
 
 // How many NeoPixels are attached to the Arduino?
 #define NUMPIXELS      5
 
+// Analog Pins
+#define PHOTOR0_PIN 0
+#define PHOTOR1_PIN 1
+#define PHOTOR2_PIN 2
+#define PHOTOR3_PIN 3
+#define PHOTOR4_PIN 4
 #define BOUTONX_PIN 5
 #define BOUTONY_PIN 6
-#define BOUTONSW_PIN 5
 
 // When we setup the NeoPixel library, we tell it how many pixels, and which pin to use to send signals.
 // Note that for older NeoPixel strips you might need to change the third parameter--see the strandtest
@@ -20,11 +29,10 @@ Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, PIXELPIN, NEO_GRB + NEO_
 RH_ASK RH_driver = RH_ASK(2000, 11, 12, 10, false);
 
 unsigned char i;
-unsigned char j; 
+unsigned char j;
+
 /*Port Definitions*/
-int Max7219_pinCLK = 7;
-int Max7219_pinCS = 9;
-int Max7219_pinDIN = 8;
+
 
 #if 1
 
@@ -127,23 +135,23 @@ unsigned char disp1[38][8]={
 void Write_Max7219_byte(unsigned char DATA) 
 {   
             unsigned char i;
-	    digitalWrite(Max7219_pinCS,LOW);		
+	    digitalWrite(MAX7219_CS_PIN,LOW);		
 	    for(i=8;i>=1;i--)
           {		  
-             digitalWrite(Max7219_pinCLK,LOW);
-             digitalWrite(Max7219_pinDIN,DATA&0x80);// Extracting a bit data
+             digitalWrite(MAX7219_CLK_PIN,LOW);
+             digitalWrite(MAX7219_DIN_PIN,DATA&0x80);// Extracting a bit data
              DATA = DATA<<1;
-             digitalWrite(Max7219_pinCLK,HIGH);
+             digitalWrite(MAX7219_CLK_PIN,HIGH);
            }                                 
 }
  
  
 void Write_Max7219(unsigned char address,unsigned char dat)
 {
-        digitalWrite(Max7219_pinCS,LOW);
+        digitalWrite(MAX7219_CS_PIN,LOW);
         Write_Max7219_byte(address);           //address，code of LED
         Write_Max7219_byte(dat);               //data，figure on LED 
-        digitalWrite(Max7219_pinCS,HIGH);
+        digitalWrite(MAX7219_CS_PIN,HIGH);
 }
  
 void Init_MAX7219(void)
@@ -160,9 +168,9 @@ void Init_MAX7219(void)
 void setup()
 {
   Serial.begin(115200); // Initialisation du port série pour avoir un retour sur le serial monitor
-  pinMode(Max7219_pinCLK,OUTPUT);
-  pinMode(Max7219_pinCS,OUTPUT);
-  pinMode(Max7219_pinDIN,OUTPUT);
+  pinMode(MAX7219_CLK_PIN,OUTPUT);
+  pinMode(MAX7219_CS_PIN,OUTPUT);
+  pinMode(MAX7219_DIN_PIN,OUTPUT);
   Serial.println("Radiohead initialization");
   if (!RH_driver.init())
          Serial.println("Radiohead init failed");
@@ -175,7 +183,7 @@ void setup()
   }
   Serial.println("RGB LED initialization");
   for(int i=0;i<NUMPIXELS;i++){
-    pixels.setPixelColor(i, pixels.Color(0,0,0));
+    pixels.setPixelColor(i, pixels.Color(8,16,24));
   }
   pixels.show(); // This sends the updated pixel color to the hardware.
 }
@@ -184,6 +192,7 @@ void setup()
 void loop()
 {
     int BoutonX, BoutonY, BoutonSW;
+    int Photo_R0, Photo_R1, Photo_R2, Photo_R3, Photo_R4;
     const char *msg = "hello";  
     uint8_t buf[RH_ASK_MAX_MESSAGE_LEN];
     uint8_t buflen = sizeof(buf);
@@ -202,7 +211,7 @@ void loop()
     BoutonX = analogRead(BOUTONX_PIN);
     BoutonY = analogRead(BOUTONY_PIN);
     BoutonSW = digitalRead(BOUTONSW_PIN);
-    Serial.print("Bouton\n");
+    Serial.print("Bouton\t");
     Serial.print("X:");
     Serial.print(BoutonX);
     Serial.print("\t");
@@ -212,6 +221,35 @@ void loop()
     Serial.print("SW:");
     Serial.print(BoutonSW);
     Serial.print("\n");
+    
+    Photo_R0 = analogRead(PHOTOR0_PIN);
+    Photo_R1 = analogRead(PHOTOR1_PIN);
+    Photo_R2 = analogRead(PHOTOR2_PIN);
+    Photo_R3 = analogRead(PHOTOR3_PIN);
+    Photo_R4 = analogRead(PHOTOR4_PIN);
+    
+    Serial.print("Photo\n");
+    Serial.print("0:");
+    Serial.print(Photo_R0);
+    Serial.print("\t");
+    Serial.print("1:");
+    Serial.print(Photo_R1);
+    Serial.print("\t");
+    Serial.print("2:");
+    Serial.print(Photo_R2);
+    Serial.print("\t");
+    Serial.print("3:");
+    Serial.print(Photo_R3);
+    Serial.print("\t");
+    Serial.print("4:");
+    Serial.print(Photo_R4);
+    Serial.print("\n");
+    
+    for(int i=0;i<NUMPIXELS;i++){
+      pixels.setPixelColor(i, pixels.Color(8*(BoutonX/255),16*(BoutonY/255),24*((BoutonX-BoutonY)/255)));
+    }
+    pixels.show();
+    
 #if 0
 
   for(j=38;j<49;j++)
